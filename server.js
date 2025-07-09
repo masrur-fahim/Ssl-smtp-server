@@ -109,7 +109,7 @@ app.post('/api/send-otp', async (req, res) => {
     service: 'gmail',
     auth: {
         user: 'iamfahimfaisal39@gmail.com',
-        pass: 'hdiu ctaa qxya xttp'
+        pass: 'hdiuctaaqxyaxttp'
     }
 });
 
