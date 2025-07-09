@@ -7,7 +7,13 @@ require('dotenv').config();
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+// Allow CORS for frontend
+app.use(cors({
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
 
 // --- Config from .env ---
 const store_id = 'algor685c511224e18';
@@ -101,17 +107,26 @@ app.get('/test-ssl-gateway', (req, res) => {
 });
 
 // --- Send OTP ---
+// In-memory OTP store
+const otpStore = {};
+
 app.post('/api/send-otp', async (req, res) => {
     try {
         const { to, otp, type = 'verify', userType = 'Customer' } = req.body;
+        if (!to || !otp) {
+            return res.status(400).json({ success: false, message: 'Missing email or OTP' });
+        }
 
-       const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: 'iamfahimfaisal39@gmail.com',
-        pass: 'hdiuctaaqxyaxttp'
-    }
-});
+        // Store OTP with timestamp
+        otpStore[to] = { otp, timestamp: Date.now() };
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: 'iamfahimfaisal39@gmail.com',
+                pass: 'hdiuctaaqxyaxttp'
+            }
+        });
 
         const html = `
             <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px;">
@@ -123,7 +138,7 @@ app.post('/api/send-otp', async (req, res) => {
             </div>`;
 
         const mailOptions = {
-           from: `"denTallo" <faisalmasrur71@gmail.com>`,
+            from: `"denTallo" <faisalmasrur71@gmail.com>`,
             to,
             subject: `denTallo - OTP Verification`,
             html
@@ -132,7 +147,27 @@ app.post('/api/send-otp', async (req, res) => {
         const info = await transporter.sendMail(mailOptions);
         res.json({ success: true, messageId: info.messageId });
     } catch (err) {
+        console.error('OTP SEND ERROR:', err);
         res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// --- Verify OTP ---
+app.post('/api/verify-otp', (req, res) => {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+        return res.status(400).json({ success: false, message: 'Missing email or OTP' });
+    }
+    const record = otpStore[email];
+    if (!record) {
+        return res.status(400).json({ success: false, message: 'No OTP found for this email' });
+    }
+    // 5 min expiry
+    if (record.otp === otp && Date.now() - record.timestamp < 5 * 60 * 1000) {
+        delete otpStore[email];
+        return res.json({ success: true, message: 'OTP verified' });
+    } else {
+        return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
     }
 });
 
