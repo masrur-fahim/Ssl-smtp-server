@@ -16,7 +16,7 @@ const is_live = false; // true when you go live
 // Your Render backend URL
 const backendBaseUrl = 'https://ssl-smtp-server.onrender.com';
 // If you know your frontend Render URL, replace below
-const frontendBaseUrl = 'http://ug2002016.cse.pstu.ac.bd/';
+const frontendBaseUrl = 'http://localhost:3000/';
 
 // --- Initiate payment session ---
 app.post('/api/initiate-payment', async (req, res) => {
@@ -117,8 +117,8 @@ app.post('/api/send-otp', async (req, res) => {
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: emailConfig.auth.user,
-                pass: emailConfig.auth.pass
+                user: faisalmasrur71@gmail.com,
+                pass: hdiu ctaa qxya xttp
             }
         });
 
@@ -136,9 +136,9 @@ app.post('/api/send-otp', async (req, res) => {
             </div>`;
 
         const mailOptions = {
-            from: `"Next Gen Farm" <${emailConfig.auth.user}>`,
+            from: `"denTallo" <${faisalmasrur71@gmail.com}>`,
             to,
-            subject: `Next Gen Farm - ${actionText} Verification Code`,
+            subject: `denTallo - ${actionText} Verification Code`,
             html
         };
 
