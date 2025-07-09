@@ -105,13 +105,13 @@ app.post('/api/send-otp', async (req, res) => {
     try {
         const { to, otp, type = 'verify', userType = 'Customer' } = req.body;
 
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: 'faisalmasrur71@gmail.com',
-                pass: 'hdiu ctaa qxya xttp'
-            }
-        });
+       const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'iamfahimfaisal39@gmail.com',
+        pass: 'hdiu ctaa qxya xttp'
+    }
+});
 
         const html = `
             <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px;">
