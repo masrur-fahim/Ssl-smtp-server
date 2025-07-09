@@ -11,6 +11,6 @@
     "express": "^4.18.2",
     "nodemailer": "^6.9.4",
     "path": "^0.12.7",
-    "sslcommerz-lts": "^1.2.5"
+    "sslcommerz-lts": "^1.0.0"
   }
 }
