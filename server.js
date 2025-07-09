@@ -3,22 +3,21 @@ const SSLCommerzPayment = require('sslcommerz-lts');
 const cors = require('cors');
 const path = require('path');
 const nodemailer = require('nodemailer');
+require('dotenv').config();
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// --- Config ---
+// --- Config from .env ---
 const store_id = 'algor685c511224e18';
-const store_passwd = 'algor685c511224e18@ssl';
-const is_live = false; // true when you go live
+const store_passwd =  'algor685c511224e18@ssl';
+const is_live = false;
 
-// Your Render backend URL
-const backendBaseUrl = 'https://ssl-smtp-server.onrender.com';
-// If you know your frontend Render URL, replace below
-const frontendBaseUrl = 'http://localhost:3000/';
+const backendBaseUrl = 'https://ssl-smtp-server-thkn.onrender.com';
+const frontendBaseUrl ='http://localhost:3000';
 
-// --- Initiate payment session ---
+// --- Payment Endpoint ---
 app.post('/api/initiate-payment', async (req, res) => {
     const orderData = {
         ...req.body,
@@ -37,17 +36,12 @@ app.post('/api/initiate-payment', async (req, res) => {
         product_profile: req.body.product_profile || 'general'
     };
 
-    console.log('Initiating payment with data:', JSON.stringify(orderData, null, 2));
-
     try {
         const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
         const apiResponse = await sslcz.init(orderData);
-        console.log('SSLCommerz response:', apiResponse);
-
         if (apiResponse.GatewayPageURL) {
             res.json({ success: true, GatewayPageURL: apiResponse.GatewayPageURL });
         } else {
-            console.error('No GatewayPageURL:', apiResponse);
             res.status(400).json({ success: false, error: apiResponse.failedreason || 'GatewayPageURL missing' });
         }
     } catch (err) {
@@ -56,7 +50,7 @@ app.post('/api/initiate-payment', async (req, res) => {
     }
 });
 
-// --- Validate payment ---
+// --- Validate Payment ---
 app.post('/api/validate-payment', async (req, res) => {
     const { val_id } = req.body;
     try {
@@ -64,14 +58,13 @@ app.post('/api/validate-payment', async (req, res) => {
         const data = await sslcz.validate({ val_id });
         res.json(data);
     } catch (err) {
-        console.error('Validation error:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// --- Test SSLCommerz gateway directly ---
+// --- Test Gateway ---
 app.get('/test-ssl-gateway', (req, res) => {
-    const data = {
+    const testData = {
         total_amount: 100,
         currency: 'BDT',
         tran_id: 'REF' + Date.now(),
@@ -96,9 +89,8 @@ app.get('/test-ssl-gateway', (req, res) => {
     };
 
     const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
-    sslcz.init(data).then(apiResponse => {
+    sslcz.init(testData).then(apiResponse => {
         if (apiResponse.GatewayPageURL) {
-            console.log('Redirecting to:', apiResponse.GatewayPageURL);
             res.redirect(apiResponse.GatewayPageURL);
         } else {
             res.send('Failed to get GatewayPageURL: ' + JSON.stringify(apiResponse));
@@ -108,11 +100,10 @@ app.get('/test-ssl-gateway', (req, res) => {
     });
 });
 
-// --- Send OTP email ---
+// --- Send OTP ---
 app.post('/api/send-otp', async (req, res) => {
     try {
-        const { to, otp, type, userType, emailConfig } = req.body;
-        console.log(`Sending OTP to: ${to} | type: ${type} | userType: ${userType}`);
+        const { to, otp, type = 'verify', userType = 'Customer' } = req.body;
 
         const transporter = nodemailer.createTransport({
             service: 'gmail',
@@ -122,42 +113,36 @@ app.post('/api/send-otp', async (req, res) => {
             }
         });
 
-        const actionText = type === 'signin' ? 'Sign In' : 'Account Registration';
-        const accountType = userType === 'farmer' ? 'Farmer' : 'Customer';
-
         const html = `
             <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px;">
-                <h2 style="color:#2c5530; text-align:center;">${actionText} Verification</h2>
-                <p>Hello ${accountType},</p>
+                <h2 style="color:#2c5530; text-align:center;">${type === 'signin' ? 'Sign In' : 'Verification'} Code</h2>
+                <p>Hello ${userType},</p>
                 <p>Your verification code is:</p>
                 <h1 style="color:#2c5530; text-align:center;">${otp}</h1>
                 <p>This code will expire in 5 minutes.</p>
-                <p style="font-size:12px; color:#888;">If you didn't request this, please ignore this email.</p>
             </div>`;
 
         const mailOptions = {
-            from: `"denTallo" <${faisalmasrur71@gmail.com}>`,
+            from: `"denTallo" <${process.env.EMAIL_USER}>`,
             to,
-            subject: `denTallo - ${actionText} Verification Code`,
+            subject: `denTallo - OTP Verification`,
             html
         };
 
         const info = await transporter.sendMail(mailOptions);
-        console.log('Email sent:', info.messageId);
         res.json({ success: true, messageId: info.messageId });
     } catch (err) {
-        console.error('Error sending email:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// --- Health check ---
+// --- Health Check ---
 app.get('/', (req, res) => {
-    res.send('✅ SSLCommerz & OTP backend running on Render!');
+    res.send('✅ SSLCommerz + OTP backend is running!');
 });
 
-// --- Start server ---
+// --- Start Server ---
 const PORT = process.env.PORT || 3030;
 app.listen(PORT, () => {
-    console.log(`✅ Server running on Render: ${backendBaseUrl} (port ${PORT})`);
+    console.log(`✅ Server running on port ${PORT}`);
 });
