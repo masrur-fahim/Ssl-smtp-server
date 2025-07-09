@@ -123,7 +123,7 @@ app.post('/api/send-otp', async (req, res) => {
             </div>`;
 
         const mailOptions = {
-            from: `"denTallo" <${process.env.EMAIL_USER}>`,
+           from: `"denTallo" <faisalmasrur71@gmail.com>`,
             to,
             subject: `denTallo - OTP Verification`,
             html
